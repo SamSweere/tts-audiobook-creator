@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "audiobook-tts"
+version = "0.1.0"
+description = "Convert books to audiobooks"
+authors = ["Sam Sweere <samsweere@gmail.com>"]
+readme = "README.md"
+packages = [{include = "audiobook_tts"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11, <3.12"
+torch = "^2.2.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.2.1"
+pre-commit = "^3.6.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
