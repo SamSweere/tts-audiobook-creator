@@ -9,10 +9,15 @@ packages = [{include = "audiobook_tts"}]
 [tool.poetry.dependencies]
 python = ">=3.11, <3.12"
 torch = "^2.2.0"
+ebooklib = "^0.18"
+beautifulsoup4 = "^4.12.3"
+tts = "^0.22.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.2.1"
 pre-commit = "^3.6.1"
+ipykernel = "^6.29.2"
+nbstripout = "^0.7.1"
 
 [build-system]
 requires = ["poetry-core"]
