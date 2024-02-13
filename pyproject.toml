@@ -12,6 +12,7 @@ torch = "^2.2.0"
 ebooklib = "^0.18"
 beautifulsoup4 = "^4.12.3"
 tts = "^0.22.0"
+nltk = "^3.8.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.2.1"
