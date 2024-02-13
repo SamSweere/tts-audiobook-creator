@@ -32,7 +32,7 @@ def clean_html_content(element):
         else:
             for content in element.contents:
                 text_parts.append(clean_html_content(content))
-    
+
     return "".join(text_parts)
 
 
@@ -41,10 +41,10 @@ def epub_to_raw_text_book(epub_path: str | Path):
 
     book = {}
 
-    title = epub_book.get_metadata('DC', 'title')[0][0]
+    title = epub_book.get_metadata("DC", "title")[0][0]
     book["title"] = title
 
-    author = epub_book.get_metadata('DC', 'creator')[0][0]
+    author = epub_book.get_metadata("DC", "creator")[0][0]
     book["author"] = author
 
     chapters = []
