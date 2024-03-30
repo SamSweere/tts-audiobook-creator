@@ -1,16 +1,16 @@
-from bs4 import BeautifulSoup
-import ebooklib
-from ebooklib import epub
 from pathlib import Path
+from typing import Any
 
-
-from nltk.tokenize import sent_tokenize
+import ebooklib
 import nltk
+from bs4 import BeautifulSoup
+from ebooklib import epub
+from nltk.tokenize import sent_tokenize
 
 nltk.download("punkt")  # Ensure the punkt tokenizer is available
 
 
-def insert_periods_at_splits(text, max_length):
+def insert_periods_at_splits(text: str, max_length: int) -> str:
     """Modify text by inserting periods at splits for long sentences, without adding extra periods before newlines."""
     paragraphs = text.split("\n")
     modified_paragraphs = []
@@ -32,7 +32,7 @@ def insert_periods_at_splits(text, max_length):
     return "\n".join(modified_paragraphs)
 
 
-def split_and_insert_period(sentence, max_length):
+def split_and_insert_period(sentence: str, max_length: int) -> str:
     """Recursively split a sentence and insert periods, ensuring proper punctuation."""
     if len(sentence) <= max_length:
         return sentence if sentence.endswith(".") else sentence + "."
@@ -41,16 +41,10 @@ def split_and_insert_period(sentence, max_length):
         split_point = sentence.rfind(",", 0, max_length)
         if split_point == -1:  # No comma found, use space as a fallback
             split_point = sentence.rfind(" ", 0, max_length)
-        if (
-            split_point == -1 or split_point == 0
-        ):  # No suitable split point found, or it's at the start
+        if split_point == -1 or split_point == 0:  # No suitable split point found, or it's at the start
             split_point = max_length
         part1 = sentence[:split_point].strip()
-        part2 = (
-            sentence[split_point + 1 :].strip()
-            if sentence[split_point] == ","
-            else sentence[split_point:].strip()
-        )
+        part2 = sentence[split_point + 1 :].strip() if sentence[split_point] == "," else sentence[split_point:].strip()
 
         # Replace a comma with a period if it's the split point, and ensure part1 ends with a period
         part1 = (part1[:-1] if part1.endswith(",") else part1) + "."
@@ -59,7 +53,7 @@ def split_and_insert_period(sentence, max_length):
         return part1 + ("" if part2_processed == "." else " " + part2_processed)
 
 
-def clean_html_content(element):
+def clean_html_content(element: BeautifulSoup) -> str:
     """
     Recursively convert an HTML element to plain text with minimal newlines,
     adding newlines only after block-level elements.
@@ -91,7 +85,7 @@ def clean_html_content(element):
     return "".join(text_parts)
 
 
-def epub_to_raw_text_book(epub_path: str | Path, max_sentence_length: int = 300):
+def epub_to_raw_text_book(epub_path: str | Path, max_sentence_length: int = 300) -> dict[str, Any]:
     epub_book = epub.read_epub(str(epub_path))
 
     book = {}
@@ -123,9 +117,7 @@ def epub_to_raw_text_book(epub_path: str | Path, max_sentence_length: int = 300)
             cleaned_text = cleaned_text.strip()
 
             # Insert periods at sentence splits
-            cleaned_text = insert_periods_at_splits(
-                cleaned_text, max_length=max_sentence_length
-            )
+            cleaned_text = insert_periods_at_splits(cleaned_text, max_length=max_sentence_length)
 
             chapter["text"] = cleaned_text
 
