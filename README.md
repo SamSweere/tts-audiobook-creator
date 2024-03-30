@@ -4,7 +4,7 @@
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 # TTS Audiobook Creator
-Convert books to audiobooks using AI based text to speech (TTS). 
+Convert books to audiobooks using AI based text to speech (TTS).
 
 ## Development Installation
 Make sure to have Python 3.11 installed and create a virtual environment.
