@@ -1,21 +1,37 @@
+import logging
 from pathlib import Path
 
 import torch
 from TTS.api import TTS
 
+logger = logging.getLogger(__name__)
 
-class AUDIOBOOK_TTS:
-    def __init__(self) -> None:
+
+class Audiobook_TTS:
+    def __init__(self, output_path: Path | str, speaker_path: Path | str, language: str) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Using device: {self.device}")
+
+        self.output_path = output_path
+        self.speaker_path = speaker_path
+        self.language = language
 
         # Init TTS
         self.tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(self.device)
 
-    def speak(self, text: str, output_path: Path, speaker_path: Path, language: str) -> None:
+        logger.info("Initialized TTS")
+
+    def speak(self, text: str, filename: str) -> Path:
         # Text to speech to a file
-        self.tts.tts_to_file(
+        audio_path = self.tts.tts_to_file(
             text=text,
-            speaker_wav=str(speaker_path),
-            language=language,
-            file_path=str(output_path),
+            speaker_wav=str(self.speaker_path),
+            language=self.language,
+            file_path=str(Path(self.output_path) / filename) + ".wav",
         )
+
+        audio_path = Path(audio_path)
+
+        logger.info(f"Saved audio to {audio_path}")
+
+        return audio_path
