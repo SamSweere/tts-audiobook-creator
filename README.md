@@ -6,7 +6,7 @@
 # TTS Audiobook Creator
 Convert books to audiobooks using AI based text to speech (TTS).
 
-## Development Installation
+## Installation
 Make sure to have Python 3.11 installed and create a virtual environment.
 
 Install the requirements by using:
@@ -44,3 +44,23 @@ The following steps are for a detailed installation of the development environme
     ```bash
     poetry install
     ```
+
+## Data Flow
+```mermaid
+graph LR
+    UI(User Interface) --> BR(Book Reader)
+
+    BR --> BP(Book Parser)
+    BP --> SBF(Standard Book Format)
+    SBF --> TTF(TTS Text Formatting)
+
+    subgraph TTS_Engine Specific
+        TTF --> TTS(Text-To-Speech Engine)
+    end
+
+    TTS --> AF(Audiofiles)
+    AF --> ABF(Audiobook Format)
+
+    BP --> MDC("Metadata (Cover, etc)")
+    MDC --> ABF
+```
