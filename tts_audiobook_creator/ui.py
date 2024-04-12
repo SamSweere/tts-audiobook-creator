@@ -1,8 +1,16 @@
+import logging
+
 import gradio as gr
+
+from tts_audiobook_creator.controller import Audiobook_Controller
+
+logger = logging.getLogger(__name__)
 
 
 class AudioBookCreatorUI:
-    def __init__(self) -> None:
+    def __init__(self, controller) -> None:
+        self.controller = controller
+
         # Store chapters and titles as instance variables
         self.chapters: list[dict[str, str]] = []
         self.chapter_titles: list[str] = []
@@ -37,33 +45,43 @@ class AudioBookCreatorUI:
             self.generate_audio_button.click(self.generate_audio, inputs=self.chapter_content_textfield)
 
     def generate_audio(self, chapter_content: str) -> str:
-        print(f"Generating audio for: {chapter_content}")
+        logger.info(f"Generating audio for: {chapter_content}")
+        # TODO remove and update this
+        self.controller.init_tts()
+        self.controller.tts.speak(chapter_content, filename="ui_test_chapter")
         # TODO implement this
         return "Audio generated"
 
-    def extract_chapters(self, fileobj: gr.File) -> list[dict[str, str]]:
-        # TODO remove and update this
-        with open(fileobj.name) as f:
-            text = f.read()
-        chapter_contents = text.split("Chapter")[1:]  # Assuming each chapter starts with 'Chapter'
-        chapters = []
-        for chapter_content in chapter_contents:
-            chapter = {
-                "title": "Chapter " + chapter_content.split("\n")[0],
-                "content": chapter_content.strip(),  # Remove leading/trailing whitespaces
-            }
-            chapters.append(chapter)
-        return chapters
+    # def extract_chapters(self, fileobj: gr.File) -> list[dict[str, str]]:
+    #     # TODO remove and update this
+    #     with open(fileobj.name) as f:
+    #         text = f.read()
+    #     chapter_contents = text.split("Chapter")[1:]  # Assuming each chapter starts with 'Chapter'
+    #     chapters = []
+    #     for chapter_content in chapter_contents:
+    #         chapter = {
+    #             "title": "Chapter " + chapter_content.split("\n")[0],
+    #             "content": chapter_content.strip(),  # Remove leading/trailing whitespaces
+    #         }
+    #         chapters.append(chapter)
+    #     return chapters
 
     def rs_change(self, i: int) -> gr.Textbox:
-        return gr.Textbox(value=self.chapters[i]["content"], interactive=True)
+        return gr.Textbox(value=self.chapters[i]["body"], interactive=True)
 
     def process_upload(self, fileobj: gr.File) -> tuple[gr.Dropdown, gr.Textbox]:
-        print(f"Processing file: {fileobj.name}")
-        # TODO update this
-        self.chapters = self.extract_chapters(fileobj)
+        logger.info(f"Processing file: {fileobj.name}")
+
+        # Read the book
+        self.controller.read_book(fileobj.name)
+
+        self.chapters = self.controller.book["chapters"]
         self.chapter_titles = [chapter["title"] for chapter in self.chapters]
-        print(f"{self.chapter_titles=}")
+
+        # # TODO update this
+        # self.chapters = self.extract_chapters(fileobj)
+        # self.chapter_titles = [chapter["title"] for chapter in self.chapters]
+        logger.info(f"{self.chapter_titles=}")
         return gr.Dropdown(
             choices=self.chapter_titles,
             value=self.chapter_titles[0],
@@ -71,7 +89,7 @@ class AudioBookCreatorUI:
             multiselect=False,
             label="Chapter Selection",
             interactive=True,
-        ), self.chapters[0]["content"]
+        ), self.chapters[0]["body"]
 
     def launch(self) -> None:
         # Method to launch the Gradio interface
@@ -82,6 +100,8 @@ class AudioBookCreatorUI:
 # if __name__ == "__main__":
 # For interactive development remove the `if __name__ == "__main__":` block
 # and run: `gradio tts_audiobook_creator/ui.py`
-ui = AudioBookCreatorUI()
+# Instantiate the controller
+controller = Audiobook_Controller()
+ui = AudioBookCreatorUI(controller)
 demo = ui.interface
 ui.launch()
