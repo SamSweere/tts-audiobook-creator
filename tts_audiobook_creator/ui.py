@@ -29,7 +29,7 @@ class AudioBookCreatorUI:
             with gr.Row():
                 with gr.Column(scale=1, min_width=600):
                     # Column 1 contains the file upload, chapter selection dropdown, and chapter content textfield
-                    file_input = gr.File(label="Upload File")
+                    file_input = gr.File(label="Upload Epub File", file_types=["epub"])
                     chapters_dropdown = gr.Dropdown(
                         choices=self.chapter_titles,
                         type="index",
