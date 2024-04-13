@@ -14,7 +14,22 @@ Install the requirements by using:
 pip install -r requirements.txt
 ```
 
-### Detailed Development Installation
+## Usage
+By default the program will use the sample epub in the `sample_data` directory with the default voice. To use a different book or voice update the `config.toml` file.
+
+### Using the UI
+This is the recommended way to use the program. It gives more fine grained control over the process and the option to preview the audiobook.
+```bash
+python tts_audiobook_creator/ui.py
+```
+
+### Using the CLI
+To generate an audiobook for the whole book without the UI use the following command:
+```bash
+python main.py
+```
+
+## Detailed Development Installation
 The following steps are for a detailed installation of the development environment. Note that for every step there are multiple ways to i.e. install python, create an environment or install dependencies. The following steps are just one way to do it.
 
 
@@ -63,4 +78,19 @@ graph LR
 
     BP --> MDC("Metadata (Cover, etc)")
     MDC --> ABF
+```
+
+## Book Type Format
+```python
+book = {
+    "title": "Title",
+    "author": "Author",
+    "chapters": [
+        {
+            "title": "Chapter Title",
+            "body": "Chapter Text",
+            "audio_path": "{Path to audio file}"
+        }
+    ]
+}
 ```
