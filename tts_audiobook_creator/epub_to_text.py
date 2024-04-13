@@ -101,9 +101,9 @@ def epub_to_raw_text_book(epub_path: str | Path, max_sentence_length: int = 300)
         if item.get_type() == ebooklib.ITEM_DOCUMENT:
             chapter = {}
 
-            chapter_name = item.get_name().split("/")[-1].split(".")[0]
+            chapter_title = item.get_name().split("/")[-1].split(".")[0]
 
-            chapter["name"] = chapter_name
+            chapter["title"] = chapter_title
 
             xhtml_content = item.get_body_content()
 
@@ -119,7 +119,7 @@ def epub_to_raw_text_book(epub_path: str | Path, max_sentence_length: int = 300)
             # Insert periods at sentence splits
             cleaned_text = insert_periods_at_splits(cleaned_text, max_length=max_sentence_length)
 
-            chapter["text"] = cleaned_text
+            chapter["body"] = cleaned_text
 
             chapters.append(chapter)
 
