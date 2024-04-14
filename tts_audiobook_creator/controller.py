@@ -4,7 +4,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from tts_audiobook_creator.epub_to_text import epub_to_raw_text_book
-from tts_audiobook_creator.tts import Audiobook_TTS
+from tts_audiobook_creator.tts import BaseTTS, get_tts
 from tts_audiobook_creator.utils import load_config
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class Audiobook_Controller:
         self.output_dir.mkdir(exist_ok=True)
 
         # Initialize the to be used variables
-        self.tts: Audiobook_TTS | None = None
+        self.tts: BaseTTS | None = None
         self.book: dict[str, str | list[dict[str, str]]] = {}
         self.audiobook_output_dir: Path = Path()
 
@@ -56,11 +56,7 @@ class Audiobook_Controller:
 
     def init_tts(self) -> None:
         if not self.tts:
-            self.tts = Audiobook_TTS(
-                output_path=self.audiobook_output_dir,
-                speaker_path=str(self.config["speaker_path"]),
-                language=str(self.config["language"]),
-            )
+            self.tts = get_tts()
 
     def read_chapter(self, chapter_index: int) -> Path:
         """Read a chapter and save the audio file to the output directory
