@@ -10,4 +10,3 @@ language = "en"
 
 [TTS.XTTS]
 speaker_path = "{path_to_project_root}/sample_data/voices/female_1.wav"
-
