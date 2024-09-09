@@ -4,12 +4,10 @@ from pathlib import Path
 import torch
 from TTS.api import TTS
 
-from tts_audiobook_creator.tts.base_tts import BaseTTS
-
 logger = logging.getLogger(__name__)
 
 
-class XTTS(BaseTTS):
+class Audiobook_TTS:
     def __init__(self, output_path: Path | str, speaker_path: Path | str, language: str) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Using device: {self.device}")
