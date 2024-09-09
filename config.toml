@@ -1,4 +1,12 @@
-speaker_path = "{path_to_project_root}/sample_data/voices/female_1.wav"
 output_dir = "{path_to_project_root}/data/output"
 book_path = "{path_to_project_root}/sample_data/Meditations_Marcus_Aurelius.epub"
+
+
+[TTS]
+tts_engine = "pyttsx3" # "XTTS"
 language = "en"
+
+[TTS.pyttsx3]
+
+[TTS.XTTS]
+speaker_path = "{path_to_project_root}/sample_data/voices/female_1.wav"
