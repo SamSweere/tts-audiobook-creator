@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tts_audiobook_creator.tts.base_tts import BaseTTS
+from tts_audiobook_creator.tts import BaseTTS
 
 
 class Pyttsx3TTS(BaseTTS):

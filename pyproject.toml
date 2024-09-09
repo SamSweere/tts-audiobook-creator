@@ -13,6 +13,10 @@ beautifulsoup4 = "^4.12.3"
 nltk = "^3.8.1"
 tqdm = "^4.66.2"
 gradio = "^4.26.0"
+python-dotenv = "^1.0.1"
+litellm = "^1.44.22"
+openai = "^1.44.1"
+pydub = "^0.25.1"
 
 [tool.poetry.group.xtts]
 optional = true

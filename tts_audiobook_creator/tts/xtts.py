@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from TTS.api import TTS
 
-from tts_audiobook_creator.tts.base_tts import BaseTTS
+from tts_audiobook_creator.tts import BaseTTS
 
 logger = logging.getLogger(__name__)
 
