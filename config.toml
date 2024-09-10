@@ -3,10 +3,15 @@ book_path = "{path_to_project_root}/sample_data/Meditations_Marcus_Aurelius.epub
 
 
 [TTS]
-tts_engine = "pyttsx3" # "XTTS"
+tts_engine = "openai" # "XTTS", "openai", "pyttsx3"
 language = "en"
 
 [TTS.pyttsx3]
 
 [TTS.XTTS]
 speaker_path = "{path_to_project_root}/sample_data/voices/female_1.wav"
+
+[TTS.openai]
+# https://platform.openai.com/docs/guides/text-to-speech/quickstart
+model = "tts-1" # "tts-1", "tts-1-hd"
+voice = "alloy" # "alloy", "echo", "fable", "onyx", "nova", "shimmer"

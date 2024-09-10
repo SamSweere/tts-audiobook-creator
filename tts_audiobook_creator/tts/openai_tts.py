@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from tqdm.asyncio import tqdm_asyncio
 from tts_audiobook_creator.tts import BaseTTS
 from tts_audiobook_creator.tts.utils import split_text, stitch_audio
 from tts_audiobook_creator.utils import get_project_root_path
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAITTS(BaseTTS):
@@ -36,6 +39,7 @@ class OpenAITTS(BaseTTS):
             model (str, optional): The OpenAI TTS model to use. Defaults to "tts-1".
             voice (str, optional): The voice to use for speech synthesis. Defaults to "alloy".
         """
+        logger.debug("Initializing OpenAITTS instance...")
         self.model = model
         self.voice = voice
         self.output_path = output_path
@@ -48,6 +52,7 @@ class OpenAITTS(BaseTTS):
 
         # Set up OpenAI API client
         self.client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        logger.debug("OpenAITTS instance initialized successfully.")
 
     async def _text_to_speech(self, text: str, filename: str) -> Path:
         """
@@ -60,9 +65,16 @@ class OpenAITTS(BaseTTS):
         Returns:
             Path: The path to the saved audio file.
         """
+        logger.info(f"Converting text to speech for file: {filename}")
         tmp_audio_path = self.tmp_audio_path / filename
-        response = await self.client.audio.speech.create(model=self.model, voice=self.voice, input=text)
-        await response.astream_to_file(tmp_audio_path)
+        async with self.client.audio.speech.with_streaming_response.create(
+            input=text, model=self.model, voice=self.voice
+        ) as response:
+            with open(tmp_audio_path, "wb") as f:
+                async for chunk in response.iter_bytes():
+                    f.write(chunk)
+
+        logger.info(f"Text to speech conversion complete for file: {filename}")
         return tmp_audio_path
 
     async def _process_chunks(self, chunks: list[str]) -> list[Path]:
@@ -75,8 +87,10 @@ class OpenAITTS(BaseTTS):
         Returns:
             list[Path]: A list of paths to the generated audio files.
         """
+        logger.info("Processing text chunks concurrently...")
         tasks = [self._text_to_speech(chunk, f"tmp_audio_{i}.mp3") for i, chunk in enumerate(chunks)]
         audio_files = await tqdm_asyncio.gather(*tasks, desc="Text to Speech")
+        logger.info("Text chunks processed successfully.")
         return audio_files
 
     async def _async_speak(self, text: str, filename: str) -> Path:
@@ -90,17 +104,18 @@ class OpenAITTS(BaseTTS):
         Returns:
             Path: The path to the final audio file.
         """
+        logger.info("Starting asynchronous text-to-speech conversion...")
         chunks = split_text(text)
 
-        print("Converting text chunks to speech...")
+        logger.info("Converting text chunks to speech...")
         audio_files = await self._process_chunks(chunks)
 
         output_file_path = self.output_path / f"{filename}.mp3"
         await asyncio.to_thread(stitch_audio, audio_files, output_file_path)
 
-        print("Cleaning up temporary files...")
+        logger.info("Cleaning up temporary files...")
         await asyncio.gather(*[asyncio.to_thread(os.remove, file) for file in audio_files])
-        print("Cleanup complete")
+        logger.info("Cleanup complete")
 
         return output_file_path
 
@@ -118,7 +133,10 @@ class OpenAITTS(BaseTTS):
         Returns:
             Path: The path to the final audio file.
         """
-        return asyncio.run(self._async_speak(text, filename))
+        logger.info(f"Starting synchronous text-to-speech conversion for file: {filename}")
+        result = asyncio.run(self._async_speak(text, filename))
+        logger.info(f"Synchronous text-to-speech conversion complete for file: {filename}")
+        return result
 
 
 if __name__ == "__main__":
@@ -128,4 +146,4 @@ if __name__ == "__main__":
     output_path = get_project_root_path() / "data" / "output" / "openai_tts"
     tts = OpenAITTS(output_path=output_path)
     output_file = tts.speak("Hello there, general kenobi!", "test")
-    print(f"Audio file generated at: {output_file}")
+    logger.info(f"Audio file generated at: {output_file}")
