@@ -3,7 +3,7 @@ book_path = "{path_to_project_root}/sample_data/Meditations_Marcus_Aurelius.epub
 
 
 [TTS]
-tts_engine = "openai" # "XTTS", "openai", "pyttsx3"
+engine = "openai" # "XTTS", "openai", "pyttsx3"
 language = "en"
 
 [TTS.pyttsx3]

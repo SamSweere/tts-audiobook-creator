@@ -1,5 +1,6 @@
 import logging
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -8,6 +9,79 @@ import requests
 from tts_audiobook_creator.utils import get_project_root_path
 
 logger = logging.getLogger(__name__)
+
+
+def extract_arxiv_id(arxiv_url: str) -> str:
+    """
+    Extract the arXiv ID from a given arXiv URL.
+
+    Args:
+        arxiv_url (str): The URL of the arXiv paper.
+
+    Returns:
+        str: The arXiv ID.
+
+    Raises:
+        ValueError: If the URL is not a valid arXiv URL.
+    """
+    parsed_url = urlparse(arxiv_url)
+    if parsed_url.netloc != "arxiv.org":
+        raise ValueError("The URL must be from arXiv.")
+
+    path_parts = parsed_url.path.split("/")
+    arxiv_id = path_parts[-1]
+    if not arxiv_id:
+        arxiv_id = path_parts[-2]  # Handle URLs ending with a slash
+
+    if not arxiv_id or "." not in arxiv_id:
+        raise ValueError("Unable to extract a valid arXiv ID from the URL.")
+
+    return arxiv_id
+
+
+def fetch_arxiv_title(arxiv_id: str) -> str:
+    """
+    Fetch the title of an arXiv paper using the arXiv API.
+
+    Args:
+        arxiv_id (str): The arXiv ID of the paper.
+
+    Returns:
+        str: The title of the paper.
+
+    Raises:
+        requests.RequestException: If there's an error fetching the data from the API.
+        ValueError: If the API response is not in the expected format.
+    """
+    api_url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
+
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+
+        # Parse the XML response
+        root = ET.fromstring(response.content)
+
+        # Define the namespace
+        namespace = {"atom": "http://www.w3.org/2005/Atom"}
+
+        # Find the title element within the entry
+        title_element = root.find(".//atom:entry/atom:title", namespaces=namespace)
+
+        if title_element is not None and title_element.text:
+            # Clean up the title: remove newlines and extra spaces
+            title = " ".join(title_element.text.split())
+            return title
+        else:
+            logger.warning(f"Could not find title for arXiv ID: {arxiv_id}")
+            return "Unknown Title"
+
+    except requests.RequestException as e:
+        logger.error(f"Error fetching arXiv data: {e}")
+        raise
+    except ET.ParseError as e:
+        logger.error(f"Error parsing arXiv API response: {e}")
+        raise ValueError("Invalid API response format") from e
 
 
 def fetch_arxiv_latex_archive(arxiv_url: str) -> Path:
@@ -25,11 +99,8 @@ def fetch_arxiv_latex_archive(arxiv_url: str) -> Path:
         requests.RequestException: If there's an error downloading the file.
     """
     logger.info(f"Fetching arXiv paper from {arxiv_url}...")
-    parsed_url = urlparse(arxiv_url)
-    if parsed_url.netloc != "arxiv.org":
-        raise ValueError("The URL must be from arXiv.")
 
-    paper_id = parsed_url.path.split("/")[-1]
+    paper_id = extract_arxiv_id(arxiv_url)
     source_url = f"https://arxiv.org/src/{paper_id}"
     temp_dir = get_project_root_path() / "data" / "tmp"
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -106,18 +177,25 @@ def process_arxiv_paper(arxiv_url: str) -> str:
         str: The LaTeX content of the paper.
 
     Raises:
-        ValueError: If the URL is not from arXiv.
+        ValueError: If the URL is not from arXiv or the arXiv ID can't be extracted.
         requests.RequestException: If there's an error downloading the file.
         shutil.ReadError: If there's an error extracting the archive.
         FileNotFoundError: If the main LaTeX file is not found.
     """
+    arxiv_id = extract_arxiv_id(arxiv_url)
+    title = fetch_arxiv_title(arxiv_id)
+
+    # Fetch and process the LaTeX content (reusing existing functions)
     archive_path = fetch_arxiv_latex_archive(arxiv_url)
     extracted_dir = extract_latex_archive(archive_path)
-    return find_main_latex_content(extracted_dir)
+    latex_content = find_main_latex_content(extracted_dir)
+
+    return latex_content, title
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     sample_arxiv_url = "https://arxiv.org/abs/2205.01152"
-    latex_content = process_arxiv_paper(sample_arxiv_url)
-    print(latex_content[:500])  # Print first 500 characters as a sample
+    latex_content, paper_title = process_arxiv_paper(sample_arxiv_url)
+    print(f"Paper Title: {paper_title}")
+    print("First 500 characters of LaTeX content:")
+    print(latex_content[:500])

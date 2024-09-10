@@ -25,25 +25,21 @@ class OpenAITTS(BaseTTS):
     Attributes:
         model (str): The OpenAI TTS model to use.
         voice (str): The voice to use for speech synthesis.
-        output_path (Path): The directory where final audio files will be saved.
         tmp_audio_path (Path): The directory for temporary audio files.
         client (openai.AsyncOpenAI): The asynchronous OpenAI client.
     """
 
-    def __init__(self, output_path: Path, model: str = "tts-1", voice: str = "alloy") -> None:
+    def __init__(self, model: str = "tts-1", voice: str = "alloy") -> None:
         """
         Initializes the OpenAITTS instance.
 
         Args:
-            output_path (Path): The directory where final audio files will be saved.
             model (str, optional): The OpenAI TTS model to use. Defaults to "tts-1".
             voice (str, optional): The voice to use for speech synthesis. Defaults to "alloy".
         """
         logger.debug("Initializing OpenAITTS instance...")
         self.model = model
         self.voice = voice
-        self.output_path = output_path
-        self.output_path.mkdir(parents=True, exist_ok=True)  # Create output directory
         self.tmp_audio_path = get_project_root_path() / "data" / "tmp"
         self.tmp_audio_path.mkdir(parents=True, exist_ok=True)
 
@@ -93,13 +89,13 @@ class OpenAITTS(BaseTTS):
         logger.info("Text chunks processed successfully.")
         return audio_files
 
-    async def _async_speak(self, text: str, filename: str) -> Path:
+    async def _async_speak(self, text: str, output_file_path: Path) -> Path:
         """
         Asynchronously converts the given text to speech, saves it as an audio file, and returns the file path.
 
         Args:
             text (str): The text to convert to speech.
-            filename (str): The name of the output audio file (without extension).
+            output_file_path (Path): The full path where the output audio file will be saved.
 
         Returns:
             Path: The path to the final audio file.
@@ -110,7 +106,6 @@ class OpenAITTS(BaseTTS):
         logger.info("Converting text chunks to speech...")
         audio_files = await self._process_chunks(chunks)
 
-        output_file_path = self.output_path / f"{filename}.mp3"
         await asyncio.to_thread(stitch_audio, audio_files, output_file_path)
 
         logger.info("Cleaning up temporary files...")
@@ -119,7 +114,7 @@ class OpenAITTS(BaseTTS):
 
         return output_file_path
 
-    def speak(self, text: str, filename: str) -> Path:
+    def speak(self, text: str, output_file_path: Path) -> Path:
         """
         Converts the given text to speech, saves it as an audio file, and returns the file path.
 
@@ -128,14 +123,15 @@ class OpenAITTS(BaseTTS):
 
         Args:
             text (str): The text to convert to speech.
-            filename (str): The name of the output audio file (without extension).
+            output_file_path (Path): The full path where the output audio file will be saved.
 
         Returns:
             Path: The path to the final audio file.
         """
-        logger.info(f"Starting synchronous text-to-speech conversion for file: {filename}")
-        result = asyncio.run(self._async_speak(text, filename))
-        logger.info(f"Synchronous text-to-speech conversion complete for file: {filename}")
+        logger.info(f"Starting synchronous text-to-speech conversion for file: {output_file_path}")
+        output_file_path.parent.mkdir(parents=True, exist_ok=True)
+        result = asyncio.run(self._async_speak(text, output_file_path))
+        logger.info(f"Synchronous text-to-speech conversion complete for file: {output_file_path}")
         return result
 
 
@@ -143,7 +139,7 @@ if __name__ == "__main__":
     """
     Main function to demonstrate the usage of OpenAITTS.
     """
-    output_path = get_project_root_path() / "data" / "output" / "openai_tts"
-    tts = OpenAITTS(output_path=output_path)
-    output_file = tts.speak("Hello there, general kenobi!", "test")
+    output_file_path = get_project_root_path() / "data" / "output" / "openai_tts" / "test.mp3"
+    tts = OpenAITTS()
+    output_file = tts.speak("Hello there, General Kenobi!", output_file_path)
     logger.info(f"Audio file generated at: {output_file}")

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import gradio as gr
 
-from tts_audiobook_creator.controller import Audiobook_Controller
+from tts_audiobook_creator.controller.audiobook_controller import Audiobook_Controller
 
 logging.basicConfig(level=logging.INFO)
 

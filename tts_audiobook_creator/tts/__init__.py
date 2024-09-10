@@ -1,8 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
-from tts_audiobook_creator.utils import load_config
+from tts_audiobook_creator.utils import get_project_root_path, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -11,19 +12,29 @@ class BaseTTS(ABC):
     """Abstract base class for TTS engines."""
 
     @abstractmethod
-    def speak(self, text: str, filename: str) -> Path:
+    def speak(self, text: str, output_file_path: Path) -> Path:
+        """
+        Convert text to speech and save it to a file.
+
+        Args:
+            text (str): The text to convert to speech.
+            output_file_path (Path): The full path where the output audio file will be saved.
+
+        Returns:
+            Path: The path to the generated audio file.
+        """
         pass
 
     # Add any shared functions here
 
 
-def get_tts(audiobook_output_dir: Path, tts_engine: str | None = None) -> BaseTTS:
-    """Create a TTS engine.
+def get_tts(tts_engine: str | None = None) -> BaseTTS:
+    """
+    Create a TTS engine.
 
     Args:
-        audiobook_output_dir (Path): Location to save the generated audio files.
-        tts_engine (str | None, optional): tts engine to create,
-            when None it reads it from the config file. Defaults to None.
+        tts_engine (str | None, optional): TTS engine to create.
+            When None, it reads from the config file. Defaults to None.
 
     Raises:
         ValueError: When an unknown TTS engine is provided.
@@ -32,7 +43,7 @@ def get_tts(audiobook_output_dir: Path, tts_engine: str | None = None) -> BaseTT
         BaseTTS: The TTS engine.
     """
     # Load the TTS configuration
-    tts_config = load_config()["TTS"]
+    tts_config: dict[str, Any] = load_config()["TTS"]
 
     if not tts_engine:
         tts_engine = tts_config["engine"]
@@ -42,25 +53,31 @@ def get_tts(audiobook_output_dir: Path, tts_engine: str | None = None) -> BaseTT
 
     tts_engine = tts_engine.lower()
 
-    if tts_engine == "pyttsx3":
-        from tts_audiobook_creator.tts.pyttsx3 import Pyttsx3TTS
+    # if tts_engine == "pyttsx3":
+    #     from tts_audiobook_creator.tts.pyttsx3 import Pyttsx3TTS
+    #     return Pyttsx3TTS()
 
-        return Pyttsx3TTS()
-    elif tts_engine == "xtts":
+    if tts_engine == "xtts":
         from tts_audiobook_creator.tts.xtts import XTTS
 
         return XTTS(
-            output_path=audiobook_output_dir,
-            speaker_path=str(tts_config["XTTS"]["speaker_path"]),
-            language=str(tts_config["language"]),
+            speaker_path=tts_config["XTTS"]["speaker_path"],
+            language=tts_config["language"],
         )
     elif tts_engine == "openai":
         from tts_audiobook_creator.tts.openai_tts import OpenAITTS
 
         return OpenAITTS(
-            output_path=audiobook_output_dir,
             model=tts_config["openai"]["model"],
             voice=tts_config["openai"]["voice"],
         )
     else:
         raise ValueError(f"Unknown TTS engine: {tts_engine}")
+
+
+if __name__ == "__main__":
+    # Example usage
+    tts = get_tts("openai")  # or get_tts("openai"), or get_tts() to use config
+    output_file_path = get_project_root_path() / "data" / "output" / "tts_test" / "test.mp3"
+    result = tts.speak("Hello there, General Kenobi!", output_file_path)
+    print(f"Audio saved to: {result}")
