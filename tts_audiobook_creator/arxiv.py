@@ -39,16 +39,12 @@ def fetch_arxiv_latex_archive(arxiv_url: str) -> Path:
         logger.info("Paper archive already downloaded.")
         return archive_path
 
-    try:
-        response = requests.get(source_url, stream=True)
-        response.raise_for_status()
-        with open(archive_path, "wb") as archive_file:
-            shutil.copyfileobj(response.raw, archive_file)
-        logger.info("Download complete.")
-        return archive_path
-    except requests.RequestException as e:
-        logger.error(f"Error downloading paper: {e}")
-        raise
+    response = requests.get(source_url, stream=True)
+    response.raise_for_status()
+    with open(archive_path, "wb") as archive_file:
+        shutil.copyfileobj(response.raw, archive_file)
+    logger.info("Download complete.")
+    return archive_path
 
 
 def extract_latex_archive(archive_path: Path) -> Path:
@@ -68,13 +64,9 @@ def extract_latex_archive(archive_path: Path) -> Path:
     extracted_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Extracting LaTeX archive {archive_path} to {extracted_dir}...")
 
-    try:
-        shutil.unpack_archive(archive_path, extracted_dir)
-        logger.info("Extraction complete.")
-        return extracted_dir
-    except shutil.ReadError as e:
-        logger.error(f"Error extracting archive: {e}")
-        raise
+    shutil.unpack_archive(archive_path, extracted_dir)
+    logger.info("Extraction complete.")
+    return extracted_dir
 
 
 def find_main_latex_content(latex_dir: Path) -> str:
@@ -112,6 +104,12 @@ def process_arxiv_paper(arxiv_url: str) -> str:
 
     Returns:
         str: The LaTeX content of the paper.
+
+    Raises:
+        ValueError: If the URL is not from arXiv.
+        requests.RequestException: If there's an error downloading the file.
+        shutil.ReadError: If there's an error extracting the archive.
+        FileNotFoundError: If the main LaTeX file is not found.
     """
     archive_path = fetch_arxiv_latex_archive(arxiv_url)
     extracted_dir = extract_latex_archive(archive_path)
@@ -121,8 +119,5 @@ def process_arxiv_paper(arxiv_url: str) -> str:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     sample_arxiv_url = "https://arxiv.org/abs/2205.01152"
-    try:
-        latex_content = process_arxiv_paper(sample_arxiv_url)
-        print(latex_content[:500])  # Print first 500 characters as a sample
-    except Exception as e:
-        logger.error(f"Error processing arXiv paper: {e}")
+    latex_content = process_arxiv_paper(sample_arxiv_url)
+    print(latex_content[:500])  # Print first 500 characters as a sample
