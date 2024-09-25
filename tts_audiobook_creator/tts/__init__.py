@@ -43,7 +43,7 @@ def get_tts(tts_engine: str | None = None) -> BaseTTS:
         BaseTTS: The TTS engine.
     """
     # Load the TTS configuration
-    tts_config: dict[str, Any] = load_config()["TTS"]
+    tts_config: dict[str, Any] = load_config()["tts"]
 
     if not tts_engine:
         tts_engine = tts_config["engine"]

@@ -57,6 +57,7 @@ ignore = [
     'D100', # Missing docstring in public module
     'D104' , # Missing docstring in public package
     'PD901', # `df` is a bad variable name. Be kinder to your future self.
+    'E501', # Line too long
     ]
 
 select = [

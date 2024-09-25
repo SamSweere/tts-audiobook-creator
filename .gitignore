@@ -3,6 +3,7 @@ data/
 .ruff_cache/
 .python-version
 *.tmp
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

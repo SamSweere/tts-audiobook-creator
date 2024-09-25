@@ -1,17 +1,21 @@
 output_dir = "{path_to_project_root}/data/output"
 book_path = "{path_to_project_root}/sample_data/Meditations_Marcus_Aurelius.epub"
 
+[to_tts_text_converter]
+# Any models suported by litellm which support streaming can be used, check: https://github.com/BerriAI/litellm?tab=readme-ov-file#supported-providers-docs
+model_name = "gpt-4o-mini"
+api_key_name = "OPENAI_API_KEY"
 
-[TTS]
+[tts]
 engine = "openai" # "XTTS", "openai", "pyttsx3"
 language = "en"
 
-[TTS.pyttsx3]
+[tts.pyttsx3]
 
-[TTS.XTTS]
+[tts.XTTS]
 speaker_path = "{path_to_project_root}/sample_data/voices/female_1.wav"
 
-[TTS.openai]
+[tts.openai]
 # https://platform.openai.com/docs/guides/text-to-speech/quickstart
 model = "tts-1" # "tts-1", "tts-1-hd"
 voice = "alloy" # "alloy", "echo", "fable", "onyx", "nova", "shimmer"
