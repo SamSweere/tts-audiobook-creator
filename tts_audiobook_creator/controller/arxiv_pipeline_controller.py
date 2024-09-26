@@ -5,7 +5,9 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-from tts_audiobook_creator.arxiv import extract_arxiv_id, process_arxiv_paper
+import requests
+
+from tts_audiobook_creator.arxiv import extract_arxiv_id, process_arxiv_html_paper, process_arxiv_latex_paper
 from tts_audiobook_creator.to_tts_text_conversion.ai_to_tts_text_converter import AiToTssTextConverter
 from tts_audiobook_creator.tts import BaseTTS, get_tts
 from tts_audiobook_creator.utils import load_config
@@ -65,13 +67,22 @@ class ArxivPipelineController:
         """
         logger.info(f"Downloading arXiv paper from {arxiv_url}...")
         arxiv_id = extract_arxiv_id(arxiv_url)
-        paper_text, title = process_arxiv_paper(arxiv_url)
+
+        file_format = None
+        try:
+            paper_text, title = process_arxiv_html_paper(arxiv_url)
+            file_format = ".html"
+        except requests.RequestException as e:
+            logger.warning(f"Failed to fetch HTML page: {e}\n Trying latex instead...")
+            paper_text, title = process_arxiv_latex_paper(arxiv_url)
+            file_format = ".tex"
+
         title_filename = self._create_title_filename(title)
         logger.info("Paper downloaded and processed successfully.")
 
         saved_path = None
         if save_text:
-            saved_path = self._save_text(paper_text, title_filename, is_tts=False)
+            saved_path = self._save_text(paper_text, title_filename, file_extension=file_format)
 
         return arxiv_id, title, paper_text, title_filename, saved_path
 
@@ -103,7 +114,7 @@ class ArxivPipelineController:
 
         saved_path = None
         if save_text:
-            saved_path = self._save_text(tts_text, title_filename, is_tts=True)
+            saved_path = self._save_text(tts_text, title_filename, file_extension=".txt")
 
         return tts_text, saved_path
 
@@ -194,14 +205,14 @@ class ArxivPipelineController:
 
         return title_filename
 
-    def _save_text(self, content: str, title_filename: str, is_tts: bool = False) -> Path:
+    def _save_text(self, content: str, title_filename: str, file_extension: str = ".txt") -> Path:
         """
         Save text content to a file.
 
         Args:
             content (str): The text content to save.
             title_filename (str): A filename-friendly version of the title.
-            is_tts (bool, optional): Whether the content is TTS text. Defaults to False.
+            file_extension (str, optional): The extension for the file. Defaults to ".txt".
 
         Returns:
             Path: The path where the text was saved.
@@ -209,13 +220,12 @@ class ArxivPipelineController:
         output_dir = self.output_dir / title_filename
         output_dir.mkdir(exist_ok=True)
 
-        file_extension = "txt" if is_tts else "tex"
-        file_path = output_dir / f"{title_filename}.{file_extension}"
+        file_path = output_dir / str(title_filename + file_extension)
 
-        logger.info(f"Saving the {'TTS' if is_tts else 'original'} text to {file_path}")
+        logger.info(f"Saving the {file_extension} to {file_path}")
         with open(file_path, "w") as text_file:
             text_file.write(content)
-        logger.info(f"Paper {'TTS' if is_tts else 'original'} text saved to file successfully.")
+        logger.info(f"{file_extension} saved to file successfully.")
         return file_path
 
 
@@ -239,8 +249,8 @@ if __name__ == "__main__":
     logger.info(f"Step 1 completed. Downloaded paper: {title} (arXiv ID: {arxiv_id})")
     logger.info(f"Original text saved at: {original_text_path}")
 
-    # TODO: for testing limit the paper_text length
-    paper_text = paper_text[:10000]
+    # # TODO: for testing limit the paper_text length
+    # paper_text = paper_text[:1000]
 
     # Step 2: Convert to TTS format
     tts_text, tts_text_path = pipeline.convert_to_tts_format(paper_text, title_filename, save_text=True)

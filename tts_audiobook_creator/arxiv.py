@@ -1,10 +1,12 @@
 import logging
+import re
 import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from bs4 import BeautifulSoup
 
 from tts_audiobook_creator.utils import get_project_root_path
 
@@ -166,7 +168,7 @@ def find_main_latex_content(latex_dir: Path) -> str:
     return main_tex_file.read_text()
 
 
-def process_arxiv_paper(arxiv_url: str) -> str:
+def process_arxiv_latex_paper(arxiv_url: str) -> (str, str):
     """
     Process an arXiv paper: fetch, extract, and get the LaTeX content.
 
@@ -174,7 +176,7 @@ def process_arxiv_paper(arxiv_url: str) -> str:
         arxiv_url (str): The URL of the arXiv paper.
 
     Returns:
-        str: The LaTeX content of the paper.
+        tuple[str, str]: A tuple containing the LaTeX content and the paper title.
 
     Raises:
         ValueError: If the URL is not from arXiv or the arXiv ID can't be extracted.
@@ -193,9 +195,147 @@ def process_arxiv_paper(arxiv_url: str) -> str:
     return latex_content, title
 
 
+def fetch_arxiv_html(arxiv_url) -> str:
+    """
+    Fetch the HTML content of an arXiv paper given its URL.
+
+    Args:
+        arxiv_url (str): The URL of the arXiv paper.
+
+    Returns:
+        str: The HTML content of the paper.
+
+    Raises:
+        requests.RequestException: If there's an error downloading the HTML page.
+    """
+    paper_id = extract_arxiv_id(arxiv_url)
+    html_url = f"https://arxiv.org/html/{paper_id}v2"
+
+    # Download the HTML page
+    response = requests.get(html_url)
+
+    if response.status_code == 200:
+        return response.text
+    else:
+        raise requests.RequestException(f"Failed to download HTML page. Status code: {response.status_code}")
+
+
+def extract_main_html_content(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Find the main title
+    main_title = soup.find("h1", class_="ltx_title ltx_title_document")
+
+    if main_title:
+        # Start from the main title and get all following siblings
+        content = [str(main_title)]
+        for sibling in main_title.next_siblings:
+            content.append(str(sibling))
+
+        return "".join(content)
+    else:
+        return "Main content not found"
+
+
+def clean_html_content(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Remove script and style elements
+    for script in soup(["script", "style"]):
+        script.decompose()
+
+    # List of allowed tags
+    allowed_tags = [
+        "p",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "strong",
+        "em",
+        "u",
+        "a",
+        "ul",
+        "ol",
+        "li",
+        "table",
+        "tr",
+        "td",
+        "th",
+        "caption",
+        "math",
+        "sub",
+        "sup",
+        "img",
+        "figure",
+        "figcaption",
+    ]
+
+    # Attributes to keep for specific tags
+    keep_attributes = {
+        "a": ["href"],
+        "img": ["src", "alt"],
+        "math": ["alttext"],
+        "td": ["rowspan", "colspan"],
+        "th": ["rowspan", "colspan"],
+    }
+
+    for tag in soup.find_all():
+        if tag.name not in allowed_tags:
+            tag.unwrap()
+        else:
+            # Keep only specific attributes for allowed tags
+            allowed_attrs = keep_attributes.get(tag.name, [])
+            tag.attrs = {attr: tag[attr] for attr in allowed_attrs if attr in tag.attrs}
+
+    # Special handling for math content
+    for math_tag in soup.find_all("math"):
+        math_content = math_tag.get("alttext", "")
+        math_tag.string = f"[MATH: {math_content}]"
+
+    # Remove empty tags
+    for tag in soup.find_all():
+        if len(tag.get_text(strip=True)) == 0 and tag.name not in ["img", "br"]:
+            tag.extract()
+
+    # Clean up whitespace
+    cleaned_html = re.sub(r"\s+", " ", str(soup))
+    cleaned_html = re.sub(r"> <", "><", cleaned_html)
+
+    return cleaned_html
+
+
+def process_arxiv_html_paper(arxiv_url: str) -> (str, str):
+    """
+    Process an arXiv HTML paper: fetch, extract, and get the HTML content.
+
+    Args:
+        arxiv_url (str): The URL of the arXiv paper.
+
+    Returns:
+        tuple[str, str]: A tuple containing the HTML content and the paper title.
+
+    Raises:
+        ValueError: If the URL is not from arXiv or the arXiv ID can't be extracted.
+        requests.RequestException: If there's an error downloading the html
+    """
+    arxiv_id = extract_arxiv_id(arxiv_url)
+    title = fetch_arxiv_title(arxiv_id)
+
+    html_text = fetch_arxiv_html(arxiv_url)
+    html_text = extract_main_html_content(html_text)
+    html_text = clean_html_content(html_text)
+
+    return html_text, title
+
+
 if __name__ == "__main__":
-    sample_arxiv_url = "https://arxiv.org/abs/2205.01152"
-    latex_content, paper_title = process_arxiv_paper(sample_arxiv_url)
+    # sample_arxiv_url = "https://arxiv.org/abs/2205.01152" # XMM
+    sample_arxiv_url = "https://arxiv.org/abs/2312.00752"  # Mamba
+    # latex_content, paper_title = process_arxiv_latex_paper(sample_arxiv_url)
+    latex_content, paper_title = process_arxiv_html_paper(sample_arxiv_url)
     print(f"Paper Title: {paper_title}")
     print("First 500 characters of LaTeX content:")
     print(latex_content[:500])

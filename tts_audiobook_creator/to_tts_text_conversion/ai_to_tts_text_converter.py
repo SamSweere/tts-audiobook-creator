@@ -21,7 +21,7 @@ Convert text to a format optimized for Text-to-Speech (TTS) systems. Follow thes
 
 - Use clear language and natural speech patterns.
 - Describe mathematical formulas in spoken words.
-- Summarize tables, highlighting key points and trends.
+- Summarize tables, highlighting key points and trends at the original location within the document.
 - Indicate when interpreting a formula, table, or non-textual element.
 - Omit commented text (between /* */ or after //).
 - Omit or briefly describe non-verbal elements (e.g., LaTeX commands, HTML tags, code comments, markup syntax). Describe them concisely if they would contribute to understanding when read aloud.
@@ -29,6 +29,8 @@ Convert text to a format optimized for Text-to-Speech (TTS) systems. Follow thes
 - Spell out acronyms and abbreviations on first use.
 - Use punctuation to guide pauses and intonation.
 - When a document has a title, use this as the starting output.
+- Always include appendices or other supplementary material in full.
+- Never summarize textual parts of the documents.
 - Stay as close as possible to the original text while adhering to the guidelines.
 
 Enclose the converted text between <TTS_START> and <TTS_END> tags.
@@ -65,7 +67,9 @@ Proceed with the conversion now.
         if start_index == -1:
             raise ValueError("The <TTS_START> tag is missing in the response.")
         if end_index == -1:
-            raise ValueError("The <TTS_END> tag is missing in the response.")
+            logger.error("The <TTS_END> tag is missing in the response.")
+            # TODO: handle this case
+            # raise ValueError("The <TTS_END> tag is missing in the response.")
 
         # Extract the text between the tags
         return raw_response[start_index + len(start_tag) : end_index].strip()
